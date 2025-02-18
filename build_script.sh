@@ -1,3 +1,4 @@
 #!/bin/bash
 python -m pip install --upgrade pip
-pip install -r requirements.txt 
+pip install --no-cache-dir -r requirements.txt
+rm -rf ~/.cache/pip 
