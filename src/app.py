@@ -66,7 +66,7 @@ def show_overview_tab(filtered_df):
         st.write("データサマリー")
         # 売上のみの統計情報を表示
         summary_df = filtered_df['売上'].describe()
-        # インデックス名を先に変更
+        # インデックス名を変更
         summary_df.index = [
             'データ数',
             '平均値',
@@ -78,8 +78,8 @@ def show_overview_tab(filtered_df):
             '最大値'
         ]
         # スタイリングを適用
-        summary_df = pd.DataFrame(summary_df).style.format(formatter='{:.2f}')
-        st.dataframe(summary_df, use_container_width=True)
+        styled_df = pd.DataFrame(summary_df).style.format(formatter='{:,.2f}')
+        st.dataframe(styled_df, use_container_width=True)
         
         st.write("データサンプル")
         # サンプルデータの表示用にコピーを作成

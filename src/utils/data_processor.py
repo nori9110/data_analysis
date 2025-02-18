@@ -335,9 +335,7 @@ class DataProcessor:
             df = filtered_df.copy()
             
             # 日付カラムの確認と設定
-            if '日付' not in df.columns and df.index.name == '日付':
-                df = df.reset_index()
-            elif '日付' not in df.columns:
+            if '日付' not in df.columns:
                 raise ValueError("日付カラムが見つかりません")
             
             # 日付型の確認と変換
