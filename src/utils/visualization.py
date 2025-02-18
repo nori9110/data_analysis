@@ -3,7 +3,9 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import japanize_matplotlib
+
+# 日本語フォント設定
+PLOTLY_FONT_CONFIG = dict(family="Hiragino Sans, Meiryo, Arial, sans-serif")
 
 def plot_sales_trend(df: pd.DataFrame, date_column: str, sales_column: str):
     """
@@ -67,6 +69,7 @@ def plot_sales_trend(df: pd.DataFrame, date_column: str, sales_column: str):
         dragmode='zoom',  # ドラッグでズーム可能に
         modebar_add=['drawline', 'drawopenpath', 'eraseshape'],  # 追加のツール
         modebar_remove=['lasso', 'select'],  # 不要なツールを削除
+        font=PLOTLY_FONT_CONFIG
     )
     
     # X軸の設定

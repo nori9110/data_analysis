@@ -4,4 +4,3 @@ numpy
 python-dotenv==0.21.0
 plotly
 matplotlib
-japanize-matplotlib
