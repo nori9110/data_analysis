@@ -65,17 +65,20 @@ def show_overview_tab(filtered_df):
     with st.expander("データ概要", expanded=False):
         st.write("データサマリー")
         # 売上のみの統計情報を表示
-        summary_df = filtered_df['売上'].describe().round(2)
-        summary_df = pd.DataFrame(summary_df).style.format({
-            'count': '{:,.0f}',
-            'mean': '¥{:,.2f}',
-            'std': '¥{:,.2f}',
-            'min': '¥{:,.2f}',
-            '25%': '¥{:,.2f}',
-            '50%': '¥{:,.2f}',
-            '75%': '¥{:,.2f}',
-            'max': '¥{:,.2f}'
-        })
+        summary_df = filtered_df['売上'].describe()
+        # インデックス名を先に変更
+        summary_df.index = [
+            'データ数',
+            '平均値',
+            '標準偏差',
+            '最小値',
+            '第1四分位数',
+            '中央値',
+            '第3四分位数',
+            '最大値'
+        ]
+        # スタイリングを適用
+        summary_df = pd.DataFrame(summary_df).style.format(formatter='{:.2f}')
         st.dataframe(summary_df, use_container_width=True)
         
         st.write("データサンプル")
@@ -146,7 +149,7 @@ def show_product_analysis_tab(filtered_df, data_processor):
         '取引回数': '{:,.0f}',
         '最大売上': '¥{:,.0f}',
         '最小売上': '¥{:,.0f}'
-    }).background_gradient(subset=['総売上', '取引回数'], cmap='YlOrRd')
+    }).background_gradient(subset=['総売上', '取引回数'], cmap='YlGn')
     st.dataframe(stats_df, use_container_width=True)
     
     # 商品別成長率の計算と表示
@@ -159,7 +162,7 @@ def show_product_analysis_tab(filtered_df, data_processor):
         growth_df = growth_df.fillna(0)
         # スタイリングを適用
         styled_growth = growth_df.style.format('{:,.1f}%').background_gradient(
-            cmap='RdYlGn',
+            cmap='YlGn',
             vmin=-50,
             vmax=50
         )
@@ -196,7 +199,7 @@ def show_customer_analysis_tab(filtered_df: pd.DataFrame, data_processor: DataPr
         '取引回数': '{:,.0f}',
         '最大売上': '¥{:,.0f}',
         '最小売上': '¥{:,.0f}'
-    }).background_gradient(subset=['総売上', '取引回数'], cmap='YlOrRd')
+    }).background_gradient(subset=['総売上', '取引回数'], cmap='YlGn')
     st.dataframe(stats_df, use_container_width=True)
     
     # RFM分析の表示
@@ -257,7 +260,7 @@ def show_customer_analysis_tab(filtered_df: pd.DataFrame, data_processor: DataPr
         '最終取引からの経過日数': '{:,.0f}日'
     }).background_gradient(
         subset=['総売上', '取引回数'],
-        cmap='YlOrRd'
+        cmap='YlGn'
     )
     st.dataframe(styled_behavior, use_container_width=True)
 
@@ -390,15 +393,51 @@ def main():
     
     # 商品フィルター
     st.sidebar.subheader("商品選択")
+    st.sidebar.markdown(
+        """
+        <style>
+        /* マルチセレクトの選択項目の背景色を緑に */
+        .stMultiSelect [data-baseweb="tag"] {
+            background-color: #28a745 !important;
+        }
+        /* 選択項目の削除ボタンの色を白に */
+        .stMultiSelect [data-baseweb="tag"] span[role="button"] {
+            color: white !important;
+        }
+        /* 選択項目のテキストの色を白に */
+        .stMultiSelect [data-baseweb="tag"] span {
+            color: white !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
     available_products = sorted(df['商品'].unique())
     selected_products = st.sidebar.multiselect(
         "商品を選択",
         available_products,
-        default=available_products
+        default=available_products,
+        label_visibility="collapsed"
     )
     
-    # 売上金額フィルター
+    # 売上金額フィルター（緑色のスライダー）
     st.sidebar.subheader("売上金額範囲")
+    st.sidebar.markdown(
+        """
+        <style>
+        /* スライダーのトラック部分を緑色に */
+        .stSlider [data-baseweb="slider"] div[class*="Track"] div {
+            background-color: #28a745 !important;
+        }
+        /* スライダーのつまみ部分を緑色に */
+        .stSlider [data-baseweb="slider"] [role="slider"] {
+            background-color: #28a745 !important;
+            border-color: #28a745 !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
     min_sales = int(df['売上'].min())
     max_sales = int(df['売上'].max())
     sales_range = st.sidebar.slider(
@@ -406,7 +445,8 @@ def main():
         min_value=min_sales,
         max_value=max_sales,
         value=(min_sales, max_sales),
-        step=1000
+        step=1000,
+        format="¥%d"
     )
     
     # 顧客フィルター
@@ -415,7 +455,8 @@ def main():
     selected_customers = st.sidebar.multiselect(
         "顧客を選択",
         available_customers,
-        default=available_customers
+        default=available_customers,
+        label_visibility="collapsed"
     )
     
     # フィルター適用

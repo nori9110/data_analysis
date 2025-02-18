@@ -350,11 +350,8 @@ class DataProcessor:
                 "月次": 'ME'
             }
             
-            # 日付でインデックスを設定してからグループ化
-            df = df.set_index('日付')
-            
             # グループ化と集計
-            grouped = df.groupby([pd.Grouper(freq=freq_map[period]), group_by])['売上'].sum()
+            grouped = df.groupby([pd.Grouper(key='日付', freq=freq_map[period]), group_by])['売上'].sum()
             grouped = grouped.reset_index()
             
             # 期間カラムのフォーマット設定
