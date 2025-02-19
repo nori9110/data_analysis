@@ -12,47 +12,40 @@ class DataProcessor:
             df (pd.DataFrame): 処理対象のデータフレーム
         """
         self.df = df.copy()
-        # 必須カラムの存在確認を先に行う
+        self.column_mapping = {
+            '顧客ID': '顧客',
+            '年齢': '年齢',
+            '性別': '性別',
+            '地域': '地域',
+            '購入カテゴリー': 'カテゴリー',
+            '購入金額': '売上',
+            '購入日': '日付',
+            '支払方法': '支払方法'
+        }
         self._validate_columns()
         self._preprocess_data()
+        self._validate_data()
     
     def _validate_columns(self):
         """必須カラムの存在確認"""
-        required_columns = ['日付', '商品', '顧客', '売上']
+        required_columns = ['購入日', '購入カテゴリー', '顧客ID', '購入金額']
         missing_columns = [col for col in required_columns if col not in self.df.columns]
         if missing_columns:
             raise ValueError(f"必須カラムが不足しています: {missing_columns}")
     
     def _preprocess_data(self):
-        """データの前処理を行う"""
-        try:
-            # 日付型への変換
-            if '日付' in self.df.columns:
-                self.df['日付'] = pd.to_datetime(self.df['日付'])
+        """データの前処理"""
+        # カラム名の変更
+        self.df = self.df.rename(columns=self.column_mapping)
         
-            # 数値型への変換
-            if '売上' in self.df.columns:
-                self.df['売上'] = pd.to_numeric(self.df['売上'], errors='coerce')
+        # 日付型への変換
+        self.df['日付'] = pd.to_datetime(self.df['日付'])
         
-            # 無効なデータの除外
-            self.df = self.df[
-                self.df['日付'].notna() &
-                self.df['売上'].notna() &
-                (self.df['売上'] >= 0) &
-                self.df['商品'].notna() &
-                (self.df['商品'].str.strip() != '') &
-                self.df['顧客'].notna() &
-                (self.df['顧客'].str.strip() != '')
-            ]
+        # 数値型への変換
+        self.df['売上'] = pd.to_numeric(self.df['売上'], errors='coerce')
         
-            # 日付でソート
-            self.df = self.df.sort_values('日付')
-        
-            # データの基本的な検証
-            self._validate_data()
-        
-        except Exception as e:
-            raise ValueError(f"データの前処理に失敗しました: {str(e)}")
+        # 欠損値の除去
+        self.df = self.df.dropna(subset=['日付', 'カテゴリー', '顧客', '売上'])
     
     def _validate_data(self):
         """データの基本的な検証を行う"""
@@ -195,33 +188,33 @@ class DataProcessor:
     
     def calculate_product_metrics(self, filtered_df: pd.DataFrame = None) -> Dict[str, pd.DataFrame]:
         """
-        商品関連の指標を計算
+        カテゴリー関連の指標を計算
         
         Args:
             filtered_df (pd.DataFrame, optional): フィルタリング済みのデータフレーム
             
         Returns:
-            Dict[str, pd.DataFrame]: 商品関連の指標
+            Dict[str, pd.DataFrame]: カテゴリー関連の指標
         """
         df = filtered_df if filtered_df is not None else self.df.copy()
         
-        # 商品別の基本統計量
-        product_stats = df.groupby('商品').agg({
-            '売上': ['sum', 'mean', 'count', 'max', 'min']
+        # カテゴリー別の基本統計量
+        category_stats = df.groupby('カテゴリー').agg({
+            '売上': ['sum', 'mean', 'count']
         })
-        product_stats.columns = ['総売上', '平均売上', '取引回数', '最大売上', '最小売上']
+        category_stats.columns = ['総売上', '平均売上', '取引回数']
         
-        # 商品別の時系列データ
-        product_time_series = df.pivot_table(
+        # カテゴリー別の時系列データ
+        time_series = df.pivot_table(
             values='売上',
             index='日付',
-            columns='商品',
+            columns='カテゴリー',
             aggfunc='sum'
         ).fillna(0)
         
         return {
-            'stats': product_stats.round(2),
-            'time_series': product_time_series
+            'category_stats': category_stats.round(2),
+            'time_series': time_series
         }
     
     def calculate_customer_metrics(self, filtered_df: pd.DataFrame = None) -> Dict[str, pd.DataFrame]:
@@ -495,8 +488,8 @@ class DataProcessor:
             validation_results['日付の連続性'] = len(date_range) >= len(actual_dates)
             
             # 3. 商品別集計の検証
-            product_totals = df.groupby('商品')['売上'].sum()
-            product_daily_totals = df.groupby(['日付', '商品'])['売上'].sum().groupby('商品').sum()
+            product_totals = df.groupby('カテゴリー')['売上'].sum()
+            product_daily_totals = df.groupby(['日付', 'カテゴリー'])['売上'].sum().groupby('カテゴリー').sum()
             validation_results['商品別集計整合性'] = all(
                 abs(product_totals - product_daily_totals) < 0.01
             )
@@ -509,7 +502,7 @@ class DataProcessor:
             )
             
             # 5. 成長率計算の検証
-            growth_rates = self.calculate_growth_rates(df, '商品', '月次')
+            growth_rates = self.calculate_growth_rates(df, 'カテゴリー', '月次')
             validation_results['成長率計算'] = not growth_rates.empty and not growth_rates.isnull().all().all()
             
             # 6. RFM分析の検証
