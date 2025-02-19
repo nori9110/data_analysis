@@ -3,9 +3,10 @@ from typing import Dict, Any, List
 import json
 from datetime import datetime
 import logging
-from openai import OpenAI
+# from openai import OpenAI
 from dotenv import load_dotenv
 import streamlit as st
+import google.generativeai as genai
 
 # 環境変数の読み込み
 load_dotenv()
@@ -19,21 +20,26 @@ class AIAnalyzer:
     def _setup_client(self):
         """APIクライアントの設定"""
         # モデルプロバイダーの選択
-        self.provider = os.getenv("MODEL_PROVIDER", "openai")
+        self.provider = os.getenv("MODEL_PROVIDER", "gemini")
         
-        if self.provider == "openai":
-            api_key = os.getenv("OPENAI_API_KEY")
-            if not api_key:
-                st.error("OpenAI APIキーが設定されていません。.envファイルを確認してください。")
-                raise ValueError("OpenAI APIキーが必要です")
+        # if self.provider == "openai":
+        #     api_key = os.getenv("OPENAI_API_KEY")
+        #     if not api_key:
+        #         st.error("OpenAI APIキーが設定されていません。.envファイルを確認してください。")
+        #         raise ValueError("OpenAI APIキーが必要です")
             
-            self.client = OpenAI(api_key=api_key)
-            self.model = os.getenv("GPT_MODEL", "gpt-4-turbo-preview")
-        # else:
-        #     import google.generativeai as genai
-        #     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        #     self.client = genai
-        #     self.model = self.client.GenerativeModel('gemini-pro')
+        #     self.client = OpenAI(api_key=api_key)
+        #     self.model = os.getenv("GPT_MODEL", "gpt-4-turbo-preview")
+        
+        if self.provider == "gemini":
+            api_key = os.getenv("GEMINI_API_KEY")
+            if not api_key:
+                st.error("Gemini APIキーが設定されていません。.envファイルを確認してください。")
+                raise ValueError("Gemini APIキーが必要です")
+                
+            genai.configure(api_key=api_key)
+            self.client = genai
+            self.model = self.client.GenerativeModel('gemini-pro')
 
     def analyze_sales_data(self, data: Dict[str, Any], prompt: str) -> Dict[str, Any]:
         """
@@ -61,28 +67,29 @@ class AIAnalyzer:
             # データの整形
             data_str = json.dumps(data, ensure_ascii=False, default=str)
             
-            if self.provider == "openai":
-                messages = [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"データ: {data_str}\n\n分析観点: {prompt}"}
-                ]
+            # if self.provider == "openai":
+            #     messages = [
+            #         {"role": "system", "content": system_prompt},
+            #         {"role": "user", "content": f"データ: {data_str}\n\n分析観点: {prompt}"}
+            #     ]
                 
-                response = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=messages,
-                    temperature=0.7,
-                    max_tokens=2000
-                )
+            #     response = self.client.chat.completions.create(
+            #         model=self.model,
+            #         messages=messages,
+            #         temperature=0.7,
+            #         max_tokens=2000
+            #     )
                 
-                # レスポンスの解析
-                result = response.choices[0].message.content
-            # else:
-            #     # Gemini用の実装（コメントアウト）
-            #     response = self.model.generate_content([
-            #         system_prompt,
-            #         f"データ: {data_str}\n\n分析観点: {prompt}"
-            #     ])
-            #     result = response.text
+            #     # レスポンスの解析
+            #     result = response.choices[0].message.content
+            
+            if self.provider == "gemini":
+                # Gemini用の実装
+                response = self.model.generate_content([
+                    system_prompt,
+                    f"データ: {data_str}\n\n分析観点: {prompt}"
+                ])
+                result = response.text
 
             # 結果の構造化
             sections = result.split("\n\n")
