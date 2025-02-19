@@ -47,7 +47,7 @@ class AIAnalysisModal:
         with col2:
             if st.button("✕", key="close_popup"):
                 st.session_state.analysis_state["is_visible"] = False
-                st.experimental_rerun()
+                st.rerun()
         
         st.markdown("---")
         
