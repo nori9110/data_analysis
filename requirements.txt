@@ -4,3 +4,9 @@ numpy
 python-dotenv==0.21.0
 plotly
 matplotlib
+google-cloud-aiplatform
+google-generativeai
+python-dotenv
+SQLAlchemy
+pytest
+requests
