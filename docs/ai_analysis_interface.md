@@ -9,6 +9,7 @@
 6. [エラーハンドリング](#6-エラーハンドリング)
 7. [レスポンシブ対応](#7-レスポンシブ対応)
 8. [多言語対応](#8-多言語対応)
+9. [API連携仕様](#9-api連携仕様)
 
 ## 1. UI構成の更新
 ### 1.1 AI分析モーダルウィンドウの新レイアウト
@@ -171,3 +172,101 @@
 - 日本語/英語プロンプトの切り替え
 - 言語別テンプレート
 - 自動翻訳機能 
+
+## 9. API連携仕様
+### 9.1 API エンドポイント
+```json
+{
+  "base_url": "/api/v1",
+  "endpoints": {
+    "analysis": {
+      "start": "/analysis/start",
+      "status": "/analysis/status/{task_id}",
+      "result": "/analysis/result/{task_id}"
+    },
+    "prompt": {
+      "templates": "/prompt/templates",
+      "validate": "/prompt/validate",
+      "optimize": "/prompt/optimize"
+    },
+    "data": {
+      "fetch": "/data/fetch",
+      "validate": "/data/validate",
+      "preprocess": "/data/preprocess"
+    }
+  }
+}
+```
+
+### 9.2 リクエスト/レスポンス形式
+#### 分析開始リクエスト
+```json
+{
+  "analysis_type": "sales|product|customer",
+  "target_period": {
+    "start_date": "YYYY-MM-DD",
+    "end_date": "YYYY-MM-DD"
+  },
+  "prompt": {
+    "type": "quick|custom",
+    "content": "プロンプト内容",
+    "options": {
+      "depth": "overview|standard|detailed",
+      "output_format": ["bullet|paragraph|table|action"],
+      "additional_context": {}
+    }
+  },
+  "data_options": {
+    "include_metadata": boolean,
+    "preprocessing_steps": []
+  }
+}
+```
+
+#### 分析結果レスポンス
+```json
+{
+  "task_id": "uuid",
+  "status": "completed|processing|error",
+  "result": {
+    "summary": "分析概要",
+    "details": "詳細分析",
+    "recommendations": ["推奨アクション"],
+    "metrics": {
+      "confidence_score": float,
+      "processing_time": integer
+    }
+  },
+  "metadata": {
+    "prompt_effectiveness": float,
+    "data_quality_score": float
+  }
+}
+```
+
+### 9.3 エラーハンドリング
+```json
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "エラーメッセージ",
+    "details": {
+      "location": "エラー発生箇所",
+      "suggestion": "改善提案"
+    }
+  }
+}
+```
+
+### 9.4 認証・認可
+- Bearer トークン認証
+- APIキー認証
+- レート制限：
+  - 無料プラン：100リクエスト/日
+  - 有料プラン：1000リクエスト/日
+
+### 9.5 セキュリティ対策
+- TLS 1.3暗号化
+- APIキーのローテーション
+- リクエスト署名検証
+- IPアドレス制限オプション 
